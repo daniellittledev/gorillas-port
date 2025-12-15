@@ -161,16 +161,10 @@ export class Renderer {
     // Chest circles
     this.ctx.strokeStyle = "#000000";
     this.ctx.beginPath();
-    this.ctx.arc(x - scl(4.9), y + scl(10), scl(4.9), (3 * Math.PI) / 2, 0);
+    this.ctx.arc(x - scl(4.9), y + scl(10), scl(4.9), 0, Math.PI / 2);
     this.ctx.stroke();
     this.ctx.beginPath();
-    this.ctx.arc(
-      x + scl(4.9),
-      y + scl(10),
-      scl(4.9),
-      Math.PI,
-      (3 * Math.PI) / 2
-    );
+    this.ctx.arc(x + scl(4.9), y + scl(10), scl(4.9), Math.PI / 2, Math.PI);
     this.ctx.stroke();
 
     // Arms - using arc to draw curved arms
