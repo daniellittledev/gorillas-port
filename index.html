@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GORILLAS - Classic Game Port</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Courier New', monospace;
+        background: #000;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow: auto;
+      }
+      
+      #gameContainer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        margin: 20px auto;
+      }
+      
+      canvas {
+        border: 2px solid #555;
+        background: #000;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        transform: scale(2);
+        transform-origin: center;
+        margin: 175px 320px;
+      }
+      
+      #controls {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        background: #222;
+        padding: 15px 25px;
+        border-radius: 8px;
+        border: 2px solid #555;
+        margin-top: 10px;
+      }
+      
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      label {
+        color: #0f0;
+        font-weight: bold;
+      }
+      
+      input {
+        background: #000;
+        color: #0f0;
+        border: 1px solid #0f0;
+        padding: 5px 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        width: 80px;
+      }
+      
+      button {
+        background: #0f0;
+        color: #000;
+        border: none;
+        padding: 8px 20px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      
+      button:hover {
+        background: #0c0;
+        transform: scale(1.05);
+      }
+      
+      button:disabled {
+        background: #555;
+        color: #888;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      #info {
+        color: #fff;
+        font-size: 18px;
+        text-align: center;
+        min-height: 24px;
+      }
+      
+      #score {
+        color: #ff0;
+        font-size: 16px;
+      }
+      
+      .title {
+        color: #0f0;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 0 10px #0f0;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContainer">
+      <div class="title">🦍 GORILLAS 🦍</div>
+      <canvas id="gameCanvas" width="640" height="350"></canvas>
+      <div id="info"></div>
+      <div id="score"></div>
+      <div id="controls">
+        <div class="control-group">
+          <label>Angle:</label>
+          <input type="number" id="angleInput" min="1" max="179" value="45" />
+        </div>
+        <div class="control-group">
+          <label>Velocity:</label>
+          <input type="number" id="velocityInput" min="1" max="200" value="80" />
+        </div>
+        <button id="fireButton">FIRE!</button>
+        <button id="newGameButton">New Game</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
