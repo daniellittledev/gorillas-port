@@ -1,6 +1,6 @@
 import { Game } from "./game";
 import { Renderer } from "./renderer";
-import { EXPLOSION } from "./constants";
+import { EXPLOSION, DEBUG } from "./constants";
 
 export class GameController {
   private game: Game;
@@ -11,6 +11,7 @@ export class GameController {
   private sunMood: "happy" | "shocked" = "happy";
   private isDancing: boolean = false;
   private danceFrame: number = 0;
+  private throwingArm: 1 | 2 | null = null; // Which arm is being animated for throw
 
   // UI elements
   private infoElement: HTMLElement;
@@ -70,24 +71,34 @@ export class GameController {
       return;
     }
 
-    // Store current player before firing (needed for self-kill explosion position)
+    // Store current player before firing
     const currentPlayer = state.currentPlayer;
 
-    this.game.fire(angle, velocity);
+    // Animate throw - store which player is throwing for render method
+    this.throwingArm = currentPlayer;
     this.fireButton.disabled = true;
+    this.render();
 
-    // Check if velocity < 2 caused immediate self-kill
-    const newState = this.game.getState();
-    if (newState.gameOver && !newState.projectile) {
-      // Self-kill: trigger explosion at gorilla position
-      const hitGorilla =
-        currentPlayer === 1 ? newState.gorilla1 : newState.gorilla2;
-      this.explosionPos = { x: hitGorilla.x, y: hitGorilla.y };
-      this.explosionFrame = 0;
-      this.animateExplosion();
-    } else {
-      this.startGameLoop();
-    }
+    // Wait for throw animation (scaled by debug time scale), then fire
+    setTimeout(() => {
+      this.throwingArm = null;
+      this.render();
+
+      this.game.fire(angle, velocity);
+
+      // Check if velocity < 2 caused immediate self-kill
+      const newState = this.game.getState();
+      if (newState.gameOver && !newState.projectile) {
+        // Self-kill: trigger explosion at gorilla position
+        const hitGorilla =
+          currentPlayer === 1 ? newState.gorilla1 : newState.gorilla2;
+        this.explosionPos = { x: hitGorilla.x, y: hitGorilla.y };
+        this.explosionFrame = 0;
+        this.animateExplosion();
+      } else {
+        this.startGameLoop();
+      }
+    }, 100 / DEBUG.timeScale); // Scale animation delay by time scale
   }
 
   private handleNewGame(): void {
@@ -206,7 +217,7 @@ export class GameController {
 
         if (state.gameOver && state.winner) {
           // Start victory dance
-          this.victoryDance(state.winner);
+          this.victoryDance();
         } else {
           this.fireButton.disabled = false;
           this.updateUI();
@@ -217,7 +228,7 @@ export class GameController {
     explode();
   }
 
-  private victoryDance(winner: number): void {
+  private victoryDance(): void {
     // Original: FOR i# = 1 TO 4 - alternates between left and right arm raised
     this.isDancing = true;
     this.danceFrame = 0;
@@ -281,10 +292,18 @@ export class GameController {
     // If player 1 won, hide player 2 (and vice versa)
     if (!state.gameOver || state.winner !== 2) {
       const isPlayer1Dancing = this.isDancing && state.winner === 1;
+      // Check if player 1 is throwing
+      const isPlayer1Throwing =
+        this.throwingArm !== null && state.currentPlayer === 1;
+      const throwArmAngle = isPlayer1Throwing
+        ? this.game.getThrowingArmAngleForPlayer(1)
+        : 0;
       const danceArmAngle = isPlayer1Dancing
         ? this.danceFrame % 2 === 0
           ? (Math.PI * 3) / 4
           : Math.PI / 4 // alternate arms
+        : isPlayer1Throwing
+        ? throwArmAngle
         : state.currentPlayer === 1
         ? armAngle
         : 0;
@@ -292,10 +311,18 @@ export class GameController {
     }
     if (!state.gameOver || state.winner !== 1) {
       const isPlayer2Dancing = this.isDancing && state.winner === 2;
+      // Check if player 2 is throwing
+      const isPlayer2Throwing =
+        this.throwingArm !== null && state.currentPlayer === 2;
+      const throwArmAngle = isPlayer2Throwing
+        ? this.game.getThrowingArmAngleForPlayer(2)
+        : 0;
       const danceArmAngle = isPlayer2Dancing
         ? this.danceFrame % 2 === 0
           ? Math.PI / 4
           : (Math.PI * 3) / 4 // alternate arms
+        : isPlayer2Throwing
+        ? throwArmAngle
         : state.currentPlayer === 2
         ? armAngle
         : 0;

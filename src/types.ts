@@ -38,7 +38,7 @@ export interface GameState {
   buildings: Building[];
   gorilla1: Gorilla;
   gorilla2: Gorilla;
-  currentPlayer: number;
+  currentPlayer: 1 | 2;
   scores: [number, number];
   wind: number;
   projectile: Projectile | null;

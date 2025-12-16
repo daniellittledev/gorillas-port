@@ -57,3 +57,8 @@ export const PHYSICS = {
   windDivisor: 5, // Wind is divided by 5 in physics formula
   gravityScale: GAME_HEIGHT / 350, // Original scales gravity by ScrHeight / 350
 };
+
+// Debug settings
+export const DEBUG = {
+  timeScale: 1, // Set to 0.5 for half speed, 0.1 for very slow, etc.
+};

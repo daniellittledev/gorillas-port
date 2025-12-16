@@ -11,8 +11,12 @@ export class Renderer {
   private ctx: CanvasRenderingContext2D;
 
   constructor(canvas: HTMLCanvasElement) {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) throw new Error("Failed to get canvas context");
+
+    // Disable anti-aliasing for sharp pixel-perfect rendering
+    ctx.imageSmoothingEnabled = false;
+
     this.ctx = ctx;
   }
 
@@ -114,22 +118,29 @@ export class Renderer {
     this.ctx.fillRect(x + 1, y + 4, 1, 1);
     this.ctx.fillRect(x + 2, y + 4, 1, 1);
 
-    // Neck
-    this.ctx.fillStyle = COLORS.gorilla;
-    this.ctx.fillRect(x - scl(3), y + scl(7), scl(3) + scl(2), 1);
+    // Neck - draw as a line
+    this.ctx.strokeStyle = COLORS.gorilla;
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - scl(3), y + scl(7));
+    this.ctx.lineTo(x + scl(2), y + scl(7));
+    this.ctx.stroke();
 
-    // Body
+    // Body - draw as filled rectangles matching original
+    this.ctx.fillStyle = COLORS.gorilla;
+    // Upper body: LINE (x - Scl(8), y + Scl(8))-(x + Scl(6.9), y + Scl(14)), OBJECTCOLOR, BF
     this.ctx.fillRect(
       x - scl(8),
       y + scl(8),
       scl(8) + scl(6.9),
       scl(14) - scl(8)
     );
+    // Lower body: LINE (x - Scl(6), y + Scl(15))-(x + Scl(4.9), y + Scl(20)), OBJECTCOLOR, BF
     this.ctx.fillRect(
       x - scl(6),
-      y + scl(15),
+      y + scl(14),
       scl(6) + scl(4.9),
-      scl(20) - scl(15)
+      scl(20) - scl(14)
     );
 
     // Legs - using arc to draw curved legs
@@ -304,11 +315,19 @@ export class Renderer {
       this.ctx.arc(x, y + scl(5), scl(2.9), 0, Math.PI * 2);
       this.ctx.fill();
     } else {
-      // Draw smile - arc from 210° to 330°
+      // Draw smile - arc centered at sun center, from 210° to 330°
+      // In BASIC: CIRCLE (x, y), Scl(8), 0, (210 * pi# / 180), (330 * pi# / 180)
       this.ctx.strokeStyle = "#000000";
       this.ctx.lineWidth = 1;
       this.ctx.beginPath();
-      this.ctx.arc(x, y, scl(8), (210 * Math.PI) / 180, (330 * Math.PI) / 180);
+      this.ctx.arc(
+        x,
+        y,
+        scl(8),
+        (30 * Math.PI) / 180,
+        (150 * Math.PI) / 180,
+        false
+      );
       this.ctx.stroke();
     }
 
@@ -335,9 +354,9 @@ export class Renderer {
     // Draw a waxing crescent shape (curved banana)
     this.ctx.beginPath();
     // Outer curve (larger arc)
-    this.ctx.arc(0, 0, 8, -Math.PI / 3, Math.PI / 3, false);
+    this.ctx.arc(0, 0, 4, -Math.PI / 3, Math.PI / 3, false);
     // Inner curve (flatter, thicker) - larger radius and less offset
-    this.ctx.arc(4, 0, 9, Math.PI / 3, -Math.PI / 3, true);
+    this.ctx.arc(2, 0, 5, Math.PI / 3, -Math.PI / 3, true);
     this.ctx.closePath();
     this.ctx.fill();
 

@@ -4,6 +4,7 @@ import {
   GRAVITY,
   PHYSICS,
   GORILLA,
+  DEBUG,
 } from "./constants";
 import type { Building, Gorilla, GameState, Projectile } from "./types";
 
@@ -147,6 +148,51 @@ export class Game {
     return buildings;
   }
 
+  private getThrowingHandPosition(
+    gorilla: Gorilla,
+    angle: number
+  ): { x: number; y: number } {
+    // Mirror logic for both players:
+    // Player 1 (left side): throws from LEFT hand (back hand away from opponent)
+    // Player 2 (right side): throws from RIGHT hand (back hand away from opponent)
+    // Both use symmetric offsets from their gorilla center
+
+    const scl = GORILLA.scl;
+    const isPlayer1 = gorilla.player === 1;
+
+    // Y position is always at upper body level: gorilla.y - Scl(4) - 3
+    const y = gorilla.y - scl(4) - 3;
+
+    if (isPlayer1) {
+      // Player 1 throws from left side (back hand away from opponent)
+      // Offset to the LEFT of gorilla center to match left arm position
+      return {
+        x: gorilla.x - scl(8),
+        y: y,
+      };
+    } else {
+      // Player 2 throws from right side (back hand away from opponent)
+      // Offset to the RIGHT of gorilla center to match right arm position
+      return {
+        x: gorilla.x + scl(8),
+        y: y,
+      };
+    }
+  }
+
+  private getThrowingArmAngle(player: 1 | 2): number {
+    // Return the arm angle for throwing animation (which arm to raise)
+    // Player 1 raises LEFT arm (away from opponent on right)
+    // Player 2 raises RIGHT arm (away from opponent on left)
+    // These are mirror images of each other
+
+    if (player === 1) {
+      return (Math.PI * 3) / 4; // Left arm up (135 degrees)
+    } else {
+      return Math.PI / 4; // Right arm up (45 degrees)
+    }
+  }
+
   private placeGorillas(buildings: Building[]): {
     gorilla1: Gorilla;
     gorilla2: Gorilla;
@@ -170,8 +216,11 @@ export class Game {
     // XAdj = 14 for EGA mode
     // GorillaX(i) = BCoor(BNum).XCoor + BWidth / 2 - XAdj
     // GorillaY(i) = BCoor(BNum).YCoor - YAdj
-    const xAdj = 14;
-    const yAdj = 30;
+    // Gorilla sprite is captured as: GET (x - Scl(15), y - Scl(1))-(x + Scl(14), y + Scl(28))
+    // This means gorilla extends 15 units left and 14 units right of center point
+    // Adjusted positioning so gorillas sit centered on buildings and don't overlap edges
+    const xAdj = 0.5; // Center gorilla on building (approximately -15 to +14 = 29 wide, asymmetric)
+    const yAdj = 35;
 
     return {
       gorilla1: {
@@ -208,6 +257,10 @@ export class Game {
     return this.state;
   }
 
+  getThrowingArmAngleForPlayer(player: 1 | 2): number {
+    return this.getThrowingArmAngle(player);
+  }
+
   fire(angle: number, velocity: number): void {
     if (this.state.projectile || this.state.gameOver) return;
 
@@ -225,20 +278,10 @@ export class Game {
     const initVx = Math.cos(actualAngle) * velocity;
     const initVy = Math.sin(actualAngle) * velocity;
 
-    // Original: adjust = Scl(4), StartYPos = StartY - adjust - 3
-    const adjust = GORILLA.scl(4);
-
-    // Original: StartXPos = StartX
-    // IF PlayerNum = 2 THEN StartXPos = StartXPos + Scl(25)
-    // This positions the banana at the gorilla's throwing arm
-    let startX = shooter.x;
-    if (this.state.currentPlayer === 2) {
-      startX = startX + GORILLA.scl(25);
-    } else {
-      // Player 1 needs slight adjustment to throw from center/right arm
-      startX = startX + GORILLA.scl(5);
-    }
-    const startY = shooter.y - adjust - 3;
+    // Get the actual throwing hand position based on which arm is raised
+    const handPos = this.getThrowingHandPosition(shooter, angle);
+    const startX = handPos.x;
+    const startY = handPos.y; // Already includes adjustment
 
     // Special case: velocity < 2 causes immediate self-hit
     // The banana doesn't even move - player hits themselves immediately
@@ -296,8 +339,8 @@ export class Game {
     // Rotate at ~100 degrees per second for smooth animation
     p.rotation = (t * 100) % 360;
 
-    // Increment time
-    p.time += PHYSICS.timeStep;
+    // Increment time with debug time scale applied
+    p.time += PHYSICS.timeStep * DEBUG.timeScale;
 
     // Check for hits
     const hitResult = this.checkCollisions(p);
