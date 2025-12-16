@@ -6,6 +6,12 @@ import {
   GORILLA,
 } from "./constants";
 import type { Building, Gorilla } from "./types";
+import {
+  formatWindText,
+  calculateExplosionScale,
+  shouldDrawExplosionSmoke,
+  type SunMood,
+} from "./presentation/renderUtils";
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -246,7 +252,7 @@ export class Renderer {
     }
   }
 
-  drawSun(mood: "happy" | "shocked" = "happy"): void {
+  drawSun(mood: SunMood = "happy"): void {
     const x = GAME_WIDTH / 2;
     const y = GORILLA.scl(25);
     const scl = GORILLA.scl;
@@ -374,21 +380,11 @@ export class Renderer {
       { r1: radius * 0.45, r2: radius * 0.45 * 0.825, color: "#5555FF" }, // Light blue
     ];
 
-    // Animate explosion growth over frames 0-6, hold for 7-10, then shrink/fade 11-15
-    let scale = 1;
-    if (frame < 6) {
-      // Growing phase
-      scale = frame / 6;
-    } else if (frame < 10) {
-      // Hold at full size
-      scale = 1;
-    } else {
-      // Fading/shrinking phase
-      scale = Math.max(0, 1 - (frame - 10) / 5);
-    }
+    // Calculate scale using pure function
+    const scale = calculateExplosionScale(frame);
 
     // Draw grey smoke first (outer circle) - only during main explosion
-    if (frame < 10 && scale > 0.2) {
+    if (shouldDrawExplosionSmoke(frame, scale)) {
       this.ctx.fillStyle = "#555555";
       this.ctx.beginPath();
       this.ctx.arc(x, y, radius * 1.175 * scale, 0, Math.PI * 2);
@@ -428,10 +424,7 @@ export class Renderer {
   }
 
   drawWindIndicator(wind: number): void {
-    const text =
-      wind === 0
-        ? "No Wind"
-        : `Wind: ${wind > 0 ? "→" : "←"} ${Math.abs(wind).toFixed(1)}`;
+    const text = formatWindText(wind);
     // Position below sun to avoid overlap (sun is at y=25, radius=12, rays extend to ~40)
     this.drawText(text, GAME_WIDTH / 2, 55, 14, "#FFFFFF");
   }

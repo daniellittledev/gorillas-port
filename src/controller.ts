@@ -1,6 +1,12 @@
 import { Game } from "./game";
 import { Renderer } from "./renderer";
 import { EXPLOSION, DEBUG } from "./constants";
+import { validateThrowInputs } from "./utils/validation";
+import {
+  calculateGorillaArmAngle,
+  shouldHideGorilla,
+  type SunMood,
+} from "./presentation/renderUtils";
 
 export class GameController {
   private game: Game;
@@ -8,7 +14,7 @@ export class GameController {
   private animationId: number | null = null;
   private explosionFrame: number = 0;
   private explosionPos: { x: number; y: number } | null = null;
-  private sunMood: "happy" | "shocked" = "happy";
+  private sunMood: SunMood = "happy";
   private isDancing: boolean = false;
   private danceFrame: number = 0;
   private throwingArm: 1 | 2 | null = null; // Which arm is being animated for throw
@@ -65,9 +71,10 @@ export class GameController {
     const angle = parseInt(this.angleInput.value);
     const velocity = parseInt(this.velocityInput.value);
 
-    if (angle < 1 || angle > 179 || velocity < 1 || velocity > 200) {
-      this.infoElement.textContent =
-        "Invalid input! Angle: 1-179, Velocity: 1-200";
+    // Validate inputs using pure function
+    const validation = validateThrowInputs(angle, velocity);
+    if (!validation.valid) {
+      this.infoElement.textContent = validation.error || "Invalid input!";
       return;
     }
 
@@ -285,48 +292,28 @@ export class GameController {
     this.renderer.drawSun(this.sunMood);
     this.renderer.drawWindIndicator(state.wind);
 
-    // Draw gorillas
-    const armAngle =
-      state.currentPlayer === 1 ? Math.PI / 4 : (Math.PI * 3) / 4;
-    // Hide the gorilla that was HIT (the loser), not the winner
-    // If player 1 won, hide player 2 (and vice versa)
-    if (!state.gameOver || state.winner !== 2) {
-      const isPlayer1Dancing = this.isDancing && state.winner === 1;
-      // Check if player 1 is throwing
-      const isPlayer1Throwing =
-        this.throwingArm !== null && state.currentPlayer === 1;
-      const throwArmAngle = isPlayer1Throwing
-        ? this.game.getThrowingArmAngleForPlayer(1)
-        : 0;
-      const danceArmAngle = isPlayer1Dancing
-        ? this.danceFrame % 2 === 0
-          ? (Math.PI * 3) / 4
-          : Math.PI / 4 // alternate arms
-        : isPlayer1Throwing
-        ? throwArmAngle
-        : state.currentPlayer === 1
-        ? armAngle
-        : 0;
-      this.renderer.drawGorilla(state.gorilla1, danceArmAngle);
+    // Draw gorilla 1 if not hidden
+    if (!shouldHideGorilla(1, state.winner, state.gameOver)) {
+      const armAngle = calculateGorillaArmAngle(state.gorilla1, {
+        isDancing: this.isDancing,
+        danceFrame: this.danceFrame,
+        isThrowing: this.throwingArm !== null,
+        isCurrentPlayer: state.currentPlayer === 1,
+        winner: state.winner,
+      });
+      this.renderer.drawGorilla(state.gorilla1, armAngle);
     }
-    if (!state.gameOver || state.winner !== 1) {
-      const isPlayer2Dancing = this.isDancing && state.winner === 2;
-      // Check if player 2 is throwing
-      const isPlayer2Throwing =
-        this.throwingArm !== null && state.currentPlayer === 2;
-      const throwArmAngle = isPlayer2Throwing
-        ? this.game.getThrowingArmAngleForPlayer(2)
-        : 0;
-      const danceArmAngle = isPlayer2Dancing
-        ? this.danceFrame % 2 === 0
-          ? Math.PI / 4
-          : (Math.PI * 3) / 4 // alternate arms
-        : isPlayer2Throwing
-        ? throwArmAngle
-        : state.currentPlayer === 2
-        ? armAngle
-        : 0;
-      this.renderer.drawGorilla(state.gorilla2, danceArmAngle);
+
+    // Draw gorilla 2 if not hidden
+    if (!shouldHideGorilla(2, state.winner, state.gameOver)) {
+      const armAngle = calculateGorillaArmAngle(state.gorilla2, {
+        isDancing: this.isDancing,
+        danceFrame: this.danceFrame,
+        isThrowing: this.throwingArm !== null,
+        isCurrentPlayer: state.currentPlayer === 2,
+        winner: state.winner,
+      });
+      this.renderer.drawGorilla(state.gorilla2, armAngle);
     }
 
     // Draw projectile with rotation
